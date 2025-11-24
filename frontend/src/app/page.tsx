@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -16,6 +16,13 @@ interface Message {
   author?: string;
 }
 
+const SUGGESTION_CHIPS = [
+  "Create a new agent",
+  "Debug my current agent",
+  "List available tools",
+  "Explain the agent architecture",
+];
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -28,6 +35,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,9 +44,10 @@ export default function Home() {
   const [sessionId, setSessionId] = useState("");
   const [isSessionCreated, setIsSessionCreated] = useState(false);
 
-  useEffect(() => {
+  const createSession = () => {
     const newSessionId = crypto.randomUUID();
     setSessionId(newSessionId);
+    setIsSessionCreated(false);
 
     // Create session on backend
     fetch(`http://localhost:8000/apps/agent4agents/users/user/sessions`, {
@@ -51,9 +60,29 @@ export default function Home() {
         else console.error("Failed to create session");
       })
       .catch((err) => console.error("Error creating session", err));
+  };
 
+  useEffect(() => {
+    createSession();
     scrollToBottom();
   }, []);
+
+  const handleReset = () => {
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          "Hello! I'm your AI Agent assistant. How can I help you build your AI agent today?",
+        author: "Agent4Agents",
+      },
+    ]);
+    createSession();
+  };
+
+  const handleChipClick = (chip: string) => {
+    setInput(chip);
+    inputRef.current?.focus();
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -106,7 +135,7 @@ export default function Home() {
           if (textPart) {
             assistantMessage = textPart.text;
             if (event.author) {
-                author = event.author;
+              author = event.author;
             }
             break;
           }
@@ -157,6 +186,14 @@ export default function Home() {
               Agent4Agents
             </h1>
           </div>
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            title="Start New Chat"
+          >
+            <RefreshCw size={18} />
+            <span className="hidden sm:inline">New Chat</span>
+          </button>
         </div>
       </header>
 
@@ -224,6 +261,20 @@ export default function Home() {
                   )}
                 </div>
               ))}
+              {messages.length === 1 && (
+                <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {SUGGESTION_CHIPS.map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={() => handleChipClick(chip)}
+                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left text-sm font-medium text-gray-700 shadow-sm transition-all hover:border-[#005691] hover:bg-gray-50 hover:text-[#005691]"
+                    >
+                      <Sparkles size={16} className="text-[#005691]" />
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
               {isLoading && (
                 <div className="flex w-full gap-4 justify-start">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
@@ -247,24 +298,24 @@ export default function Home() {
             className="relative flex items-center gap-2"
           >
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 border border-gray-300 bg-white px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-[#005691] focus:outline-none focus:ring-1 focus:ring-[#005691]"
+              className="flex-1 rounded-none border border-gray-300 bg-white px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-[#005691] focus:outline-none focus:ring-1 focus:ring-[#005691]"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 flex h-10 w-10 items-center justify-center bg-[#005691] text-white transition-colors hover:bg-[#00497a] disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-none bg-[#005691] text-white transition-colors hover:bg-[#00497a] disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <Send size={18} />
             </button>
           </form>
           <p className="mt-2 text-center text-xs text-gray-400">
-            Agent4Agents can make mistakes. Consider checking important
-            information.
+            AI-generated content. Please verify important information.
           </p>
         </div>
       </footer>
