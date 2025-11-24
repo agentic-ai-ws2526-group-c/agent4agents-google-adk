@@ -13,6 +13,7 @@ function cn(...inputs: ClassValue[]) {
 interface Message {
   role: "user" | "assistant";
   content: string;
+  author?: string;
 }
 
 export default function Home() {
@@ -21,6 +22,7 @@ export default function Home() {
       role: "assistant",
       content:
         "Hello! I'm your AI Agent assistant. How can I help you build your AI agent today?",
+      author: "Agent4Agents",
     },
   ]);
   const [input, setInput] = useState("");
@@ -92,6 +94,7 @@ export default function Home() {
 
       const events = await response.json();
       let assistantMessage = "";
+      let author = "Agent4Agents";
 
       // Iterate in reverse to find the latest response
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +105,9 @@ export default function Home() {
           const textPart = event.content.parts?.find((p: any) => p.text);
           if (textPart) {
             assistantMessage = textPart.text;
+            if (event.author) {
+                author = event.author;
+            }
             break;
           }
         }
@@ -113,7 +119,7 @@ export default function Home() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: assistantMessage },
+        { role: "assistant", content: assistantMessage, author: author },
       ]);
     } catch (error) {
       console.error("Error:", error);
@@ -171,38 +177,45 @@ export default function Home() {
                       <Bot size={16} />
                     </div>
                   )}
-                  <div
-                    className={cn(
-                      "relative max-w-[80%] px-4 py-3 text-sm sm:text-base shadow-sm",
-                      message.role === "user"
-                        ? "bg-[#005691] text-white"
-                        : "bg-gray-100 text-gray-800"
+                  <div className="flex flex-col max-w-[80%]">
+                    {message.role === "assistant" && message.author && (
+                      <span className="mb-1 ml-1 text-xs font-medium text-gray-500">
+                        {message.author}
+                      </span>
                     )}
-                  >
-                    <ReactMarkdown
+                    <div
                       className={cn(
-                        "prose prose-sm max-w-none wrap-break-word",
-                        message.role === "user" ? "prose-invert" : ""
+                        "relative px-4 py-3 text-sm sm:text-base shadow-sm",
+                        message.role === "user"
+                          ? "bg-[#005691] text-white"
+                          : "bg-gray-100 text-gray-800"
                       )}
-                      components={{
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        pre: ({ node, ...props }: any) => (
-                          <div
-                            className="overflow-auto w-full my-2 bg-black/10 p-2 rounded"
-                            {...props}
-                          />
-                        ),
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        code: ({ node, ...props }: any) => (
-                          <code
-                            className="bg-black/10 rounded px-1"
-                            {...props}
-                          />
-                        ),
-                      }}
                     >
-                      {message.content}
-                    </ReactMarkdown>
+                      <ReactMarkdown
+                        className={cn(
+                          "prose prose-sm max-w-none wrap-break-word",
+                          message.role === "user" ? "prose-invert" : ""
+                        )}
+                        components={{
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          pre: ({ node, ...props }: any) => (
+                            <div
+                              className="overflow-auto w-full my-2 bg-black/10 p-2 rounded"
+                              {...props}
+                            />
+                          ),
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          code: ({ node, ...props }: any) => (
+                            <code
+                              className="bg-black/10 rounded px-1"
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                   {message.role === "user" && (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-600">
