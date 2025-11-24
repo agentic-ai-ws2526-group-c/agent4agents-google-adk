@@ -130,14 +130,24 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 font-sans">
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <Bot size={20} />
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900">
+    <div className="flex min-h-screen flex-col bg-white text-gray-900 font-sans">
+      {/* Supergraphic Bar */}
+      <div className="w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/supergraphicbar.svg"
+          alt="Bosch Supergraphic"
+          className="w-full h-2 object-cover"
+        />
+      </div>
+
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+        <div className="mx-auto flex h-20 max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Bosch Logo" className="h-12 w-auto" />
+            <div className="h-8 w-px bg-gray-300 mx-2"></div>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
               Agent4Agents
             </h1>
           </div>
@@ -157,16 +167,16 @@ export default function Home() {
                   )}
                 >
                   {message.role === "assistant" && (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                       <Bot size={16} />
                     </div>
                   )}
                   <div
                     className={cn(
-                      "relative max-w-[80%] rounded-2xl px-4 py-3 text-sm sm:text-base shadow-sm",
+                      "relative max-w-[80%] px-4 py-3 text-sm sm:text-base shadow-sm",
                       message.role === "user"
-                        ? "bg-blue-600 text-white rounded-br-none"
-                        : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                        ? "bg-[#005691] text-white"
+                        : "bg-gray-100 text-gray-800"
                     )}
                   >
                     <ReactMarkdown
@@ -203,10 +213,10 @@ export default function Home() {
               ))}
               {isLoading && (
                 <div className="flex w-full gap-4 justify-start">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                     <Bot size={16} />
                   </div>
-                  <div className="bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
+                  <div className="bg-gray-100 text-gray-800 px-4 py-3 shadow-sm">
                     <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                   </div>
                 </div>
@@ -228,13 +238,13 @@ export default function Home() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 rounded-full border border-gray-300 bg-gray-50 px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 border border-gray-300 bg-white px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-[#005691] focus:outline-none focus:ring-1 focus:ring-[#005691]"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="absolute right-2 flex h-10 w-10 items-center justify-center bg-[#005691] text-white transition-colors hover:bg-[#00497a] disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <Send size={18} />
             </button>
