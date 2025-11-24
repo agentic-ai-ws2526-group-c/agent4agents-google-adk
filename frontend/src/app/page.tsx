@@ -1,65 +1,250 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Hello! I'm your AI Agent assistant. How can I help you build your AI agent today?",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const [sessionId, setSessionId] = useState("");
+  const [isSessionCreated, setIsSessionCreated] = useState(false);
+
+  useEffect(() => {
+    const newSessionId = crypto.randomUUID();
+    setSessionId(newSessionId);
+
+    // Create session on backend
+    fetch(`http://localhost:8000/apps/agent4agents/users/user/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: newSessionId }),
+    })
+      .then((res) => {
+        if (res.ok) setIsSessionCreated(true);
+        else console.error("Failed to create session");
+      })
+      .catch((err) => console.error("Error creating session", err));
+
+    scrollToBottom();
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading || !isSessionCreated) return;
+
+    const userMessage = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          app_name: "agent4agents",
+          user_id: "user",
+          session_id: sessionId,
+          newMessage: {
+            role: "user",
+            parts: [{ text: userMessage }],
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch response: ${response.status} ${errorText}`
+        );
+      }
+
+      const events = await response.json();
+      let assistantMessage = "";
+
+      // Iterate in reverse to find the latest response
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (let i = events.length - 1; i >= 0; i--) {
+        const event = events[i];
+        if (event.content && event.content.role === "model") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const textPart = event.content.parts?.find((p: any) => p.text);
+          if (textPart) {
+            assistantMessage = textPart.text;
+            break;
+          }
+        }
+      }
+
+      if (!assistantMessage) {
+        assistantMessage = "No response from agent.";
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: assistantMessage },
+      ]);
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, something went wrong. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 font-sans">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <Bot size={20} />
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900">
+              Agent4Agents
+            </h1>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      <main className="flex-1 overflow-hidden">
+        <div className="mx-auto flex h-full max-w-4xl flex-col">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-6">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex w-full gap-4",
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  {message.role === "assistant" && (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                      <Bot size={16} />
+                    </div>
+                  )}
+                  <div
+                    className={cn(
+                      "relative max-w-[80%] rounded-2xl px-4 py-3 text-sm sm:text-base shadow-sm",
+                      message.role === "user"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                    )}
+                  >
+                    <ReactMarkdown
+                      className={cn(
+                        "prose prose-sm max-w-none wrap-break-word",
+                        message.role === "user" ? "prose-invert" : ""
+                      )}
+                      components={{
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        pre: ({ node, ...props }: any) => (
+                          <div
+                            className="overflow-auto w-full my-2 bg-black/10 p-2 rounded"
+                            {...props}
+                          />
+                        ),
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        code: ({ node, ...props }: any) => (
+                          <code
+                            className="bg-black/10 rounded px-1"
+                            {...props}
+                          />
+                        ),
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                  {message.role === "user" && (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-600">
+                      <User size={16} />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex w-full gap-4 justify-start">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <Bot size={16} />
+                  </div>
+                  <div className="bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
         </div>
       </main>
+
+      <footer className="sticky bottom-0 border-t border-gray-200 bg-white p-4 sm:p-6">
+        <div className="mx-auto max-w-4xl">
+          <form
+            onSubmit={handleSubmit}
+            className="relative flex items-center gap-2"
+          >
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 rounded-full border border-gray-300 bg-gray-50 px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              <Send size={18} />
+            </button>
+          </form>
+          <p className="mt-2 text-center text-xs text-gray-400">
+            Agent4Agents can make mistakes. Consider checking important
+            information.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
