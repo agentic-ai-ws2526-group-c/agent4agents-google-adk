@@ -167,21 +167,11 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900 font-sans">
       {/* Supergraphic Bar */}
-      <div className="w-full">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/supergraphicbar.svg"
-          alt="Bosch Supergraphic"
-          className="w-full h-2 object-cover"
-        />
-      </div>
+      <div className="w-full h-2 bg-[linear-gradient(90deg,#8F0E2E_0%,#6D2077_16%,#005691_33%,#008ECF_50%,#00A896_66%,#92D050_83%,#FFC000_100%)]"></div>
 
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-20 max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Bosch Logo" className="h-12 w-auto" />
-            <div className="h-8 w-px bg-gray-300 mx-2"></div>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">
               Agent4Agents
             </h1>
@@ -222,7 +212,7 @@ export default function Home() {
                     )}
                     <div
                       className={cn(
-                        "relative px-4 py-3 text-sm sm:text-base shadow-sm",
+                        "relative px-5 py-4 text-base shadow-sm",
                         message.role === "user"
                           ? "bg-[#005691] text-white"
                           : "bg-gray-100 text-gray-800"
@@ -230,10 +220,17 @@ export default function Home() {
                     >
                       <ReactMarkdown
                         className={cn(
-                          "prose prose-sm max-w-none wrap-break-word",
+                          "prose max-w-none wrap-break-word",
                           message.role === "user" ? "prose-invert" : ""
                         )}
                         components={{
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          p: ({ node, ...props }: any) => (
+                            <p
+                              className="mb-6 last:mb-0 leading-relaxed"
+                              {...props}
+                            />
+                          ),
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           pre: ({ node, ...props }: any) => (
                             <div
