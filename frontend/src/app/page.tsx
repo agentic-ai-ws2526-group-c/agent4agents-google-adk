@@ -125,15 +125,24 @@ export default function Agent4Agents() {
         throw new Error("Keine Antwort vom Agenten erhalten.");
       }
 
-      // Parse JSON from agent response (strip markdown code fences if present)
+      // Parse JSON from agent response
+      // With output_schema the response is guaranteed valid JSON,
+      // but we still strip markdown fences as a safety net
       let jsonStr = assistantMessage.trim();
       if (jsonStr.startsWith("```")) {
         jsonStr = jsonStr
           .replace(/^```(?:json)?\n?/, "")
           .replace(/\n?```$/, "");
       }
-      const parsed: Recommendation = JSON.parse(jsonStr);
-      setRecommendation(parsed);
+      try {
+        const parsed: Recommendation = JSON.parse(jsonStr);
+        setRecommendation(parsed);
+      } catch {
+        console.error("Failed to parse JSON:", jsonStr);
+        throw new Error(
+          "Die Antwort des Agenten konnte nicht verarbeitet werden. Bitte versuche es erneut.",
+        );
+      }
     } catch (err) {
       console.error("Error:", err);
       setError(
