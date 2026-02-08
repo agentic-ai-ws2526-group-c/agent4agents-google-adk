@@ -24,6 +24,13 @@ import {
   RecommendationCard,
   type Recommendation,
 } from "@/components/recommendation-card";
+import { HistoryPanel } from "@/components/history-panel";
+import {
+  useRecommendationHistory,
+  downloadMarkdown,
+  copyToClipboard,
+  type HistoryEntry,
+} from "@/hooks/use-recommendation-history";
 
 const formSchema = z.object({
   useCaseDescription: z
@@ -46,6 +53,10 @@ export default function Agent4Agents() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState<HistoryEntry | null>(null);
+  const { history, addEntry, removeEntry, clearHistory } =
+    useRecommendationHistory();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -137,6 +148,18 @@ export default function Agent4Agents() {
       try {
         const parsed: Recommendation = JSON.parse(jsonStr);
         setRecommendation(parsed);
+
+        // Save to history
+        const entry = addEntry(
+          {
+            useCaseDescription: values.useCaseDescription,
+            preferredModelEcosystem: values.preferredModelEcosystem,
+            interactionChannel: values.interactionChannel,
+            integrationTargets: values.integrationTargets,
+          },
+          parsed,
+        );
+        setCurrentEntry(entry);
       } catch {
         console.error("Failed to parse JSON:", jsonStr);
         throw new Error(
@@ -160,6 +183,7 @@ export default function Agent4Agents() {
     form.clearErrors();
     setRecommendation(null);
     setError(null);
+    setCurrentEntry(null);
   }
 
   return (
@@ -172,6 +196,18 @@ export default function Agent4Agents() {
           <h1 className="text-xl font-bold text-gray-900 tracking-tight">
             Agent4Agents
           </h1>
+          <HistoryPanel
+            history={history}
+            isOpen={historyOpen}
+            onToggle={() => setHistoryOpen((v) => !v)}
+            onSelect={(entry) => {
+              setRecommendation(entry.recommendation);
+              setCurrentEntry(entry);
+              setError(null);
+            }}
+            onRemove={removeEntry}
+            onClear={clearHistory}
+          />
         </div>
       </header>
 
@@ -388,6 +424,12 @@ export default function Agent4Agents() {
                   "Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktiere das AI-Team direkt.",
                 );
               }}
+              onCopy={
+                currentEntry ? () => copyToClipboard(currentEntry) : undefined
+              }
+              onExport={
+                currentEntry ? () => downloadMarkdown(currentEntry) : undefined
+              }
             />
           )}
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Bot, Users } from "lucide-react";
+import { ExternalLink, Bot, Users, Download, Copy, Check } from "lucide-react";
+import { useState } from "react";
 
 // --- Framework metadata: docs URLs and context7 agent URLs ---
 const FRAMEWORK_META: Record<
@@ -85,12 +86,26 @@ function getEaseOfUseBadge(level: string) {
 interface RecommendationCardProps {
   recommendation: Recommendation;
   onContactExperts: () => void;
+  onCopy?: () => Promise<boolean>;
+  onExport?: () => void;
 }
 
 export function RecommendationCard({
   recommendation,
   onContactExperts,
+  onCopy,
+  onExport,
 }: RecommendationCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!onCopy) return;
+    const ok = await onCopy();
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
   const meta = FRAMEWORK_META[recommendation.framework] || {
     docsUrl: "",
     context7Url: "",
@@ -181,6 +196,34 @@ export function RecommendationCard({
               <Users className="mr-2 h-4 w-4" />
               Expertenteam kontaktieren
             </Button>
+
+            {/* Export & Copy */}
+            <div className="flex gap-2 ml-auto">
+              {onCopy && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  title="In Zwischenablage kopieren"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              {onExport && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onExport}
+                  title="Als Markdown exportieren"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
