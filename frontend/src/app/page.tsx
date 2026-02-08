@@ -20,7 +20,10 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import {
+  RecommendationCard,
+  type Recommendation,
+} from "@/components/recommendation-card";
 
 const formSchema = z.object({
   useCaseDescription: z
@@ -39,7 +42,9 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Agent4Agents() {
   const [isLoading, setIsLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -120,7 +125,15 @@ export default function Agent4Agents() {
         throw new Error("Keine Antwort vom Agenten erhalten.");
       }
 
-      setRecommendation(assistantMessage);
+      // Parse JSON from agent response (strip markdown code fences if present)
+      let jsonStr = assistantMessage.trim();
+      if (jsonStr.startsWith("```")) {
+        jsonStr = jsonStr
+          .replace(/^```(?:json)?\n?/, "")
+          .replace(/\n?```$/, "");
+      }
+      const parsed: Recommendation = JSON.parse(jsonStr);
+      setRecommendation(parsed);
     } catch (err) {
       console.error("Error:", err);
       setError(
@@ -358,14 +371,15 @@ export default function Agent4Agents() {
 
           {/* Recommendation Result */}
           {recommendation && (
-            <div className="mt-8 rounded-md border border-[#005691]/20 bg-[#005691]/5 p-6">
-              <h3 className="text-lg font-semibold text-[#005691] mb-4">
-                Framework-Empfehlung
-              </h3>
-              <div className="prose max-w-none text-gray-800">
-                <ReactMarkdown>{recommendation}</ReactMarkdown>
-              </div>
-            </div>
+            <RecommendationCard
+              recommendation={recommendation}
+              onContactExperts={() => {
+                // TODO: Implement expert contact logic
+                alert(
+                  "Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktiere das AI-Team direkt.",
+                );
+              }}
+            />
           )}
         </div>
       </main>

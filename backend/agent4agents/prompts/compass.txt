@@ -76,8 +76,17 @@
             <Step id="4" name="Finale Entscheidung">
                 <Instruction>Gib deine Empfehlung ab.</Instruction>
                 <OutputFormat>
-                    1. Nenne GENAU EIN Framework als Gewinner.
-                    2. Begründe die Entscheidung mit Fokus auf das Verhältnis von Anforderung zu Aufwand (z.B. "N8N ist hier die beste Wahl, da es deinen Prozess ohne komplexen Code abbilden kann").
+                    ANTWORTE AUSSCHLIESSLICH IN VALIDEM JSON. Kein Markdown, kein Text vor oder nach dem JSON.
+                    
+                    Verwende exakt dieses Schema:
+                    {
+                        "framework": "Name des empfohlenen Frameworks (exakt einer von: N8N, Cognigy, Google ADK, CrewAI, OpenAI SDK, Claude SDK, LangChain, LangGraph, Keine KI nötig)",
+                        "ease_of_use": "High" | "Medium" | "Hard",
+                        "summary": "Ein Satz: Warum genau dieses Framework.",
+                        "reasoning": "2-4 Sätze ausführliche Begründung mit Fokus auf Anforderung vs. Aufwand.",
+                        "ki_notwendig": true | false,
+                        "alternative_ohne_ki": "Falls ki_notwendig=false: Kurze Empfehlung (z.B. 'Excel-Makro', 'Python-Skript', 'RPA-Bot'). Sonst null."
+                    }
                 </OutputFormat>
             </Step>
         </Workflow>
