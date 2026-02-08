@@ -5,7 +5,9 @@ Uses Google ADK SequentialAgent for orchestration (LLM-as-a-Judge pattern).
 from pathlib import Path
 from pydantic import BaseModel, Field
 from google.adk.agents import LlmAgent, SequentialAgent
+from google.adk.tools import FunctionTool
 from .infra import logger
+from .tools import score_frameworks
 
 
 # --- Structured Output Schemas ---
@@ -63,14 +65,18 @@ except Exception as e:
     logger.error(f"Failed to load prompts: {e}")
     raise e
 
+# --- Tools ---
+framework_scoring_tool = FunctionTool(func=score_frameworks)
+
 # --- Stage 1: CompassAgent (Framework-Empfehlung) ---
 compass_agent = LlmAgent(
     name="CompassAgent",
     model="gemini-3-flash-preview",
     instruction=compass_instruction,
-    description="Empfiehlt exakt ein KI-Framework basierend auf strukturiertem Formular-Input. Keine Rückfragen.",
+    description="Empfiehlt exakt ein KI-Framework basierend auf strukturiertem Formular-Input. Nutzt die Framework-Capability-Matrix als Entscheidungsgrundlage.",
     output_key="recommendation",
     output_schema=FrameworkRecommendation,
+    tools=[framework_scoring_tool],
 )
 
 # --- Stage 2: JudgeAgent (Qualitätsbewertung) ---
