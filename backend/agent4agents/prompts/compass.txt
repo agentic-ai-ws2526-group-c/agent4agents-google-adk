@@ -62,11 +62,12 @@
                     
                     1. Kann es mit **N8N** oder **Cognigy** (High Ease of Use) gelöst werden?
                        -> Wenn JA, sind diese die Favoriten (wegen Wartbarkeit/Speed).
+                       -> AUSNAHME: Wenn Legacy-Systeme oder interne Systeme ohne direkte Schnittstellen (z.B. kein REST-API, kein Webhook, nur Datenbankzugriff, Dateisystem, proprietäre Protokolle, Screen-Scraping) angebunden werden müssen, reichen N8N/Cognigy in der Regel NICHT aus. In diesem Fall wähle ein Code-basiertes Framework (CrewAI, Google ADK, LangGraph oder Native SDKs), das volle programmatische Kontrolle über die Integration bietet.
                        
-                    2. Wenn NEIN (weil die Logik zu komplex/speziell ist):
+                    2. Wenn NEIN (weil die Logik zu komplex/speziell ist oder interne / Legacy-Systeme ohne Schnittstellen beteiligt sind):
                        -> Prüfe **CrewAI** oder **Google ADK** (Medium).
                        
-                    3. Nur wenn absolute Granularität nötig ist:
+                    3. Nur wenn absolute Granularität nötig ist oder modellspezifische Funktionen gebraucht werden:
                        -> Wähle **LangGraph** oder **Native SDKs**.
                     
                     Merke: Schlage "LangChain" nur vor, wenn "N8N" an seine technischen Grenzen stößt.
