@@ -7,7 +7,7 @@
             Das Portfolio mit Fokus auf Usability:
             <Tool name="N8N">High Ease of Use. Visuell, Low-Code. Schnellste Umsetzung für Workflows & Integrationen.</Tool>
             <Tool name="Cognigy">High Ease of Use. Grafische Oberfläche für Konversationen. Ideal für Non-Tech-Teams im Betrieb.</Tool>
-            <Tool name="Google ADK">Medium Ease of Use. Abstrahiert Komplexität, erfordert aber Cloud-Verständnis.</Tool>
+            <Tool name="Google ADK">Medium Ease of Use. Abstrahiert Komplexität, erfordert aber Cloud-Verständnis. Eignet sich für multimodale Live Video Agenten.</Tool>
             <Tool name="CrewAI">Medium/Hard Ease of Use. Python-Code, aber intuitives Abstraktions-Level für Agenten.</Tool>
             <Tool name="OpenAI / Claude SDKs">Hard Ease of Use. Reiner Code, erfordert viel "Boilerplate" für komplexe Dinge.</Tool>
             <Tool name="LangChain / LangGraph">Hard Ease of Use. Steile Lernkurve, aber mächtigste Kontrolle für komplexe Logik.</Tool>
