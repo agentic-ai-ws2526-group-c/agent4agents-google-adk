@@ -1,132 +1,109 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+  FieldError,
+} from "@/components/ui/field";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useForm, Controller } from "react-hook-form";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+const formSchema = z.object({
+  useCaseDescription: z
+    .string()
+    .min(1, { message: "Dieses Feld ist erforderlich" }),
+  preferredModelEcosystem: z
+    .string()
+    .min(1, { message: "Dieses Feld ist erforderlich" }),
+  interactionChannel: z
+    .string()
+    .min(1, { message: "Dieses Feld ist erforderlich" }),
+  integrationTargets: z.string(),
+});
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  author?: string;
-}
+type FormValues = z.infer<typeof formSchema>;
 
-const SUGGESTION_CHIPS = [
-  "Create a new agent",
-  "Debug my current agent",
-  "List available tools",
-  "Explain the agent architecture",
-];
-
-export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hello! I'm your AI Agent assistant. How can I help you build your AI agent today?",
-      author: "Agent4Agents",
-    },
-  ]);
-  const [input, setInput] = useState("");
+export default function Agent4Agents() {
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      useCaseDescription: "",
+      preferredModelEcosystem: "keine",
+      interactionChannel: "",
+      integrationTargets: "",
+    },
+  });
 
-  const [sessionId, setSessionId] = useState("");
-  const [isSessionCreated, setIsSessionCreated] = useState(false);
-
-  const createSession = () => {
-    const newSessionId = crypto.randomUUID();
-    setSessionId(newSessionId);
-    setIsSessionCreated(false);
-
-    // Create session on backend
-    fetch(`http://localhost:8000/apps/agent4agents/users/user/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: newSessionId }),
-    })
-      .then((res) => {
-        if (res.ok) setIsSessionCreated(true);
-        else console.error("Failed to create session");
-      })
-      .catch((err) => console.error("Error creating session", err));
-  };
-
-  useEffect(() => {
-    createSession();
-    scrollToBottom();
-  }, []);
-
-  const handleReset = () => {
-    setMessages([
-      {
-        role: "assistant",
-        content:
-          "Hello! I'm your AI Agent assistant. How can I help you build your AI agent today?",
-        author: "Agent4Agents",
-      },
-    ]);
-    createSession();
-  };
-
-  const handleChipClick = (chip: string) => {
-    setInput(chip);
-    inputRef.current?.focus();
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !isSessionCreated) return;
-
-    const userMessage = input.trim();
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+  async function onSubmit(values: FormValues) {
     setIsLoading(true);
+    setRecommendation(null);
+    setError(null);
+
+    // Build the structured JSON input for the agent
+    const agentInput = {
+      use_case_description: values.useCaseDescription,
+      preferred_model_ecosystem: values.preferredModelEcosystem,
+      interaction_channel: values.interactionChannel,
+      integration_targets: values.integrationTargets,
+    };
 
     try {
+      // 1. Create a fresh session
+      const sessionId = crypto.randomUUID();
+      const sessionRes = await fetch(
+        `http://localhost:8000/apps/agent4agents/users/user/sessions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        },
+      );
+      if (!sessionRes.ok) {
+        throw new Error("Session konnte nicht erstellt werden.");
+      }
+
+      // 2. Send form data as a single message to the agent
       const response = await fetch("http://localhost:8000/run", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           app_name: "agent4agents",
           user_id: "user",
           session_id: sessionId,
           newMessage: {
             role: "user",
-            parts: [{ text: userMessage }],
+            parts: [{ text: JSON.stringify(agentInput, null, 2) }],
           },
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `Failed to fetch response: ${response.status} ${errorText}`
-        );
+        throw new Error(`Fehler vom Server: ${response.status} ${errorText}`);
       }
 
       const events = await response.json();
       let assistantMessage = "";
-      let author = "Agent4Agents";
 
-      // Iterate in reverse to find the latest response
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Find the latest model response
       for (let i = events.length - 1; i >= 0; i--) {
         const event = events[i];
         if (event.content && event.content.role === "model") {
@@ -134,35 +111,34 @@ export default function Home() {
           const textPart = event.content.parts?.find((p: any) => p.text);
           if (textPart) {
             assistantMessage = textPart.text;
-            if (event.author) {
-              author = event.author;
-            }
             break;
           }
         }
       }
 
       if (!assistantMessage) {
-        assistantMessage = "No response from agent.";
+        throw new Error("Keine Antwort vom Agenten erhalten.");
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: assistantMessage, author: author },
-      ]);
-    } catch (error) {
-      console.error("Error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, something went wrong. Please try again.",
-        },
-      ]);
+      setRecommendation(assistantMessage);
+    } catch (err) {
+      console.error("Error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Ein unbekannter Fehler ist aufgetreten.",
+      );
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  function onReset() {
+    form.reset();
+    form.clearErrors();
+    setRecommendation(null);
+    setError(null);
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900 font-sans">
@@ -171,150 +147,233 @@ export default function Home() {
 
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-20 max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-              Agent4Agents
-            </h1>
-          </div>
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-            title="Start New Chat"
-          >
-            <RefreshCw size={18} />
-            <span className="hidden sm:inline">New Chat</span>
-          </button>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+            Agent4Agents
+          </h1>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden">
-        <div className="mx-auto flex h-full max-w-4xl flex-col">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col gap-6">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex w-full gap-4",
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  )}
-                >
-                  {message.role === "assistant" && (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                      <Bot size={16} />
-                    </div>
-                  )}
-                  <div className="flex flex-col max-w-[80%]">
-                    {message.role === "assistant" && message.author && (
-                      <span className="mb-1 ml-1 text-xs font-medium text-gray-500">
-                        {message.author}
-                      </span>
+      <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            onReset={onReset}
+            className="space-y-8 @container"
+          >
+            <div className="grid grid-cols-12 gap-4">
+              {/* Title */}
+              <div className="col-span-12">
+                <h2 className="scroll-m-20 text-4xl font-extrabold tracking-tight @5xl:text-5xl">
+                  Agent4Agents
+                </h2>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-12">
+                <p className="not-first:mt-6 text-muted-foreground">
+                  Dieses Formular dient dazu, deinen Use Case strukturiert zu
+                  erfassen und durch die Auswahl der passenden technischen
+                  Frameworks die effizienteste Lösung für deine
+                  Agentic-AI-Anwendung zu identifizieren.
+                </p>
+              </div>
+
+              {/* Use Case Description */}
+              <Controller
+                control={form.control}
+                name="useCaseDescription"
+                render={({ field, fieldState }) => (
+                  <Field
+                    className="col-span-12 flex flex-col gap-2 space-y-0 items-start"
+                    data-invalid={fieldState.invalid}
+                  >
+                    <FieldLabel>Use Case Beschreibung*</FieldLabel>
+                    <Textarea
+                      id="useCaseDescription"
+                      placeholder="Beschreibe deinen Use Case..."
+                      className="min-h-[160px]"
+                      {...field}
+                    />
+                    <FieldDescription>
+                      Bitte beschreibe hier deinen Use Case so detailliert wie
+                      möglich. Beschreibe den gesamten zu automatisierenden
+                      Geschäftsprozess präzise. Erkläre wo welche Daten
+                      vorliegen und gebraucht werden. Benenne alle technischen
+                      Systeme die im Prozess zum Einsatz kommen eindeutig.
+                      Erkläre das Geschäftsziel. (Min 300 Zeichen)
+                    </FieldDescription>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
                     )}
-                    <div
-                      className={cn(
-                        "relative px-5 py-4 text-base shadow-sm",
-                        message.role === "user"
-                          ? "bg-[#005691] text-white"
-                          : "bg-gray-100 text-gray-800"
-                      )}
+                  </Field>
+                )}
+              />
+
+              {/* Preferred Model Ecosystem */}
+              <Controller
+                control={form.control}
+                name="preferredModelEcosystem"
+                render={({ field, fieldState }) => (
+                  <Field
+                    className="col-span-12 @5xl:col-span-6 flex flex-col gap-2 space-y-0 items-start"
+                    data-invalid={fieldState.invalid}
+                  >
+                    <FieldLabel>
+                      Welches Large Language Model möchtest du benutzen?
+                    </FieldLabel>
+                    <Select
+                      value={field.value}
+                      name={field.name}
+                      onValueChange={field.onChange}
                     >
-                      <ReactMarkdown
-                        className={cn(
-                          "prose max-w-none wrap-break-word",
-                          message.role === "user" ? "prose-invert" : ""
-                        )}
-                        components={{
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          p: ({ node, ...props }: any) => (
-                            <p
-                              className="mb-6 last:mb-0 leading-relaxed"
-                              {...props}
-                            />
-                          ),
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          pre: ({ node, ...props }: any) => (
-                            <div
-                              className="overflow-auto w-full my-2 bg-black/10 p-2 rounded"
-                              {...props}
-                            />
-                          ),
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          code: ({ node, ...props }: any) => (
-                            <code
-                              className="bg-black/10 rounded px-1"
-                              {...props}
-                            />
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                  {message.role === "user" && (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-600">
-                      <User size={16} />
-                    </div>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Auswählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI GPT</SelectItem>
+                        <SelectItem value="google">Google Gemini</SelectItem>
+                        <SelectItem value="anthropic">
+                          Anthropic Claude
+                        </SelectItem>
+                        <SelectItem value="keine">Keine Präferenz</SelectItem>
+                        <SelectItem value="andere">
+                          Ein anderes (bitte in Integration Targets angeben)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Falls du ein bestimmtes Large Language Model nutzen
+                      möchtest, wähle es bitte hier aus.
+                    </FieldDescription>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+
+              {/* Interaction Channel */}
+              <Controller
+                control={form.control}
+                name="interactionChannel"
+                render={({ field, fieldState }) => (
+                  <Field
+                    className="col-span-12 @5xl:col-span-6 flex flex-col gap-2 space-y-0 items-start"
+                    data-invalid={fieldState.invalid}
+                  >
+                    <FieldLabel>Interaktionskanal*</FieldLabel>
+                    <Select
+                      value={field.value}
+                      name={field.name}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Auswählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="chatbot">
+                          Chatbot / Konversation
+                        </SelectItem>
+                        <SelectItem value="background">
+                          Hintergrundprozess / Automatisierung
+                        </SelectItem>
+                        <SelectItem value="api">API / Service</SelectItem>
+                        <SelectItem value="dashboard">
+                          Dashboard / UI
+                        </SelectItem>
+                        <SelectItem value="andere">Anderer Kanal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Wie soll der Endnutzer mit der KI-Lösung interagieren?
+                    </FieldDescription>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+
+              {/* Integration Targets */}
+              <Controller
+                control={form.control}
+                name="integrationTargets"
+                render={({ field, fieldState }) => (
+                  <Field
+                    className="col-span-12 flex flex-col gap-2 space-y-0 items-start"
+                    data-invalid={fieldState.invalid}
+                  >
+                    <FieldLabel>Integration Targets</FieldLabel>
+                    <Textarea
+                      id="integrationTargets"
+                      placeholder="z.B. SAP, Salesforce, interne REST-APIs, Datenbanken..."
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                    <FieldDescription>
+                      Welche externen Systeme, APIs oder Datenquellen sollen
+                      angebunden werden? (Optional)
+                    </FieldDescription>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+
+              {/* Buttons */}
+              <div className="col-span-12 flex gap-4 justify-end">
+                <Button type="reset" variant="outline" disabled={isLoading}>
+                  Zurücksetzen
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                </div>
-              ))}
-              {messages.length === 1 && (
-                <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {SUGGESTION_CHIPS.map((chip) => (
-                    <button
-                      key={chip}
-                      onClick={() => handleChipClick(chip)}
-                      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left text-sm font-medium text-gray-700 shadow-sm transition-all hover:border-[#005691] hover:bg-gray-50 hover:text-[#005691]"
-                    >
-                      <Sparkles size={16} className="text-[#005691]" />
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {isLoading && (
-                <div className="flex w-full gap-4 justify-start">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                    <Bot size={16} />
-                  </div>
-                  <div className="bg-gray-100 text-gray-800 px-4 py-3 shadow-sm">
-                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                  Empfehlung anfordern
+                </Button>
+              </div>
             </div>
-          </div>
+          </form>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-8 rounded-md border border-red-200 bg-red-50 p-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">
+                Fehler
+              </h3>
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="mt-8 rounded-md border border-gray-200 bg-gray-50 p-8 flex items-center justify-center gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-[#005691]" />
+              <span className="text-gray-600">
+                Empfehlung wird generiert...
+              </span>
+            </div>
+          )}
+
+          {/* Recommendation Result */}
+          {recommendation && (
+            <div className="mt-8 rounded-md border border-[#005691]/20 bg-[#005691]/5 p-6">
+              <h3 className="text-lg font-semibold text-[#005691] mb-4">
+                Framework-Empfehlung
+              </h3>
+              <div className="prose max-w-none text-gray-800">
+                <ReactMarkdown>{recommendation}</ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
-      <footer className="sticky bottom-0 border-t border-gray-200 bg-white p-4 sm:p-6">
-        <div className="mx-auto max-w-4xl">
-          <form
-            onSubmit={handleSubmit}
-            className="relative flex items-center gap-2"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 rounded-none border border-gray-300 bg-white px-4 py-3 pr-12 text-gray-900 placeholder:text-gray-500 focus:border-[#005691] focus:outline-none focus:ring-1 focus:ring-[#005691]"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-none bg-[#005691] text-white transition-colors hover:bg-[#00497a] disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <Send size={18} />
-            </button>
-          </form>
-          <p className="mt-2 text-center text-xs text-gray-400">
-            AI-generated content. Please verify important information.
-          </p>
-        </div>
+      <footer className="border-t border-gray-200 bg-white p-4">
+        <p className="text-center text-xs text-gray-400">
+          KI-generierte Inhalte. Bitte wichtige Informationen verifizieren.
+        </p>
       </footer>
     </div>
   );
