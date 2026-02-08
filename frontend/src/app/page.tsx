@@ -23,6 +23,7 @@ import { Loader2 } from "lucide-react";
 import {
   RecommendationCard,
   type Recommendation,
+  type JudgeEvaluation,
 } from "@/components/recommendation-card";
 import { HistoryPanel } from "@/components/history-panel";
 import {
@@ -52,6 +53,8 @@ export default function Agent4Agents() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(
     null,
   );
+  const [judgeEvaluation, setJudgeEvaluation] =
+    useState<JudgeEvaluation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<HistoryEntry | null>(null);
@@ -71,6 +74,7 @@ export default function Agent4Agents() {
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setRecommendation(null);
+    setJudgeEvaluation(null);
     setError(null);
 
     // Build the structured JSON input for the agent
@@ -117,37 +121,56 @@ export default function Agent4Agents() {
       }
 
       const events = await response.json();
-      let assistantMessage = "";
+      let recommendationText = "";
+      let judgeText = "";
 
-      // Find the latest model response
-      for (let i = events.length - 1; i >= 0; i--) {
-        const event = events[i];
+      // Find responses from both agents in the SequentialAgent pipeline
+      for (const event of events) {
         if (event.content && event.content.role === "model") {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const textPart = event.content.parts?.find((p: any) => p.text);
           if (textPart) {
-            assistantMessage = textPart.text;
-            break;
+            if (event.author === "CompassAgent") {
+              recommendationText = textPart.text;
+            } else if (event.author === "JudgeAgent") {
+              judgeText = textPart.text;
+            }
           }
         }
       }
 
-      if (!assistantMessage) {
-        throw new Error("Keine Antwort vom Agenten erhalten.");
+      if (!recommendationText) {
+        throw new Error("Keine Antwort vom CompassAgent erhalten.");
       }
 
-      // Parse JSON from agent response
-      // With output_schema the response is guaranteed valid JSON,
-      // but we still strip markdown fences as a safety net
-      let jsonStr = assistantMessage.trim();
-      if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr
+      // Parse recommendation JSON
+      let recJsonStr = recommendationText.trim();
+      if (recJsonStr.startsWith("```")) {
+        recJsonStr = recJsonStr
           .replace(/^```(?:json)?\n?/, "")
           .replace(/\n?```$/, "");
       }
+
+      // Parse judge evaluation JSON (optional — graceful degradation)
+      let parsedJudge: JudgeEvaluation | undefined;
+      if (judgeText) {
+        let judgeJsonStr = judgeText.trim();
+        if (judgeJsonStr.startsWith("```")) {
+          judgeJsonStr = judgeJsonStr
+            .replace(/^```(?:json)?\n?/, "")
+            .replace(/\n?```$/, "");
+        }
+        try {
+          parsedJudge = JSON.parse(judgeJsonStr);
+        } catch {
+          console.warn("Failed to parse Judge evaluation:", judgeJsonStr);
+        }
+      }
+
       try {
-        const parsed: Recommendation = JSON.parse(jsonStr);
+        const parsed: Recommendation = JSON.parse(recJsonStr);
         setRecommendation(parsed);
+        setJudgeEvaluation(parsedJudge ?? null);
 
         // Save to history
         const entry = addEntry(
@@ -158,10 +181,11 @@ export default function Agent4Agents() {
             integrationTargets: values.integrationTargets,
           },
           parsed,
+          parsedJudge,
         );
         setCurrentEntry(entry);
       } catch {
-        console.error("Failed to parse JSON:", jsonStr);
+        console.error("Failed to parse recommendation JSON:", recJsonStr);
         throw new Error(
           "Die Antwort des Agenten konnte nicht verarbeitet werden. Bitte versuche es erneut.",
         );
@@ -182,6 +206,7 @@ export default function Agent4Agents() {
     form.reset();
     form.clearErrors();
     setRecommendation(null);
+    setJudgeEvaluation(null);
     setError(null);
     setCurrentEntry(null);
   }
@@ -202,6 +227,7 @@ export default function Agent4Agents() {
             onToggle={() => setHistoryOpen((v) => !v)}
             onSelect={(entry) => {
               setRecommendation(entry.recommendation);
+              setJudgeEvaluation(entry.judgeEvaluation ?? null);
               setCurrentEntry(entry);
               setError(null);
             }}
@@ -409,7 +435,7 @@ export default function Agent4Agents() {
             <div className="mt-8 rounded-md border border-gray-200 bg-gray-50 p-8 flex items-center justify-center gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-[#005691]" />
               <span className="text-gray-600">
-                Empfehlung wird generiert...
+                Empfehlung wird generiert und bewertet...
               </span>
             </div>
           )}
@@ -418,6 +444,7 @@ export default function Agent4Agents() {
           {recommendation && (
             <RecommendationCard
               recommendation={recommendation}
+              judgeEvaluation={judgeEvaluation ?? undefined}
               entry={currentEntry ?? undefined}
               onCopy={
                 currentEntry ? () => copyToClipboard(currentEntry) : undefined

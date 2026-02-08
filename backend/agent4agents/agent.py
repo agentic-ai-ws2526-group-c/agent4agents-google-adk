@@ -1,14 +1,15 @@
 """
-Single COMPASS agent that recommends the best AI framework based on structured form input.
-No follow-up questions — delivers a direct recommendation with guaranteed JSON output.
+Two-agent pipeline: CompassAgent recommends → JudgeAgent evaluates.
+Uses Google ADK SequentialAgent for orchestration (LLM-as-a-Judge pattern).
 """
 from pathlib import Path
 from pydantic import BaseModel, Field
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent, SequentialAgent
 from .infra import logger
 
 
-# --- Structured Output Schema ---
+# --- Structured Output Schemas ---
+
 class FrameworkRecommendation(BaseModel):
     framework: str = Field(
         description="Name des empfohlenen Frameworks (exakt einer von: N8N, Cognigy, Google ADK, CrewAI, OpenAI SDK, Claude SDK, LangChain, LangGraph, Keine KI nötig)"
@@ -27,26 +28,66 @@ class FrameworkRecommendation(BaseModel):
     )
 
 
-# --- Load COMPASS Prompt ---
+class JudgeEvaluation(BaseModel):
+    score: int = Field(
+        description="Gesamtbewertung der Empfehlungsqualität auf einer Skala von 1-10",
+        ge=1,
+        le=10,
+    )
+    strengths: list[str] = Field(
+        description="Liste der Stärken der Empfehlung (mindestens 2)"
+    )
+    weaknesses: list[str] = Field(
+        description="Liste der Schwächen oder Bedenken (leeres Array falls keine)"
+    )
+    improvement_suggestions: list[str] = Field(
+        description="Konkrete Verbesserungsvorschläge (mindestens 1)"
+    )
+    framework_fit: str = Field(
+        description="1-2 Sätze ob und warum das Framework zum Use Case passt"
+    )
+    ease_of_use_realistic: bool = Field(
+        description="True wenn die Ease-of-Use-Bewertung realistisch ist"
+    )
+
+
+# --- Load Prompts ---
 BASE_DIR = Path(__file__).parent
 PROMPTS_DIR = BASE_DIR / "prompts"
-COMPASS_PROMPT_PATH = PROMPTS_DIR / "compass.txt"
 
 try:
-    compass_instruction = COMPASS_PROMPT_PATH.read_text(encoding="utf-8")
-    logger.info("COMPASS prompt loaded successfully.")
+    compass_instruction = (PROMPTS_DIR / "compass.txt").read_text(encoding="utf-8")
+    judge_instruction = (PROMPTS_DIR / "judge.txt").read_text(encoding="utf-8")
+    logger.info("Prompts loaded successfully (COMPASS + Judge).")
 except Exception as e:
-    logger.error(f"Failed to load COMPASS prompt: {e}")
+    logger.error(f"Failed to load prompts: {e}")
     raise e
 
-# --- Single Agent ---
-root_agent = LlmAgent(
+# --- Stage 1: CompassAgent (Framework-Empfehlung) ---
+compass_agent = LlmAgent(
     name="CompassAgent",
     model="gemini-3-flash-preview",
     instruction=compass_instruction,
     description="Empfiehlt exakt ein KI-Framework basierend auf strukturiertem Formular-Input. Keine Rückfragen.",
     output_key="recommendation",
     output_schema=FrameworkRecommendation,
+)
+
+# --- Stage 2: JudgeAgent (Qualitätsbewertung) ---
+judge_agent = LlmAgent(
+    name="JudgeAgent",
+    model="gemini-3-flash-preview",
+    instruction=judge_instruction,
+    description="Bewertet die Qualität der Framework-Empfehlung des CompassAgent anhand von Framework-Fit, Ease-of-Use-Realismus, Begründungsqualität und Alternativen-Check.",
+    output_key="judge_evaluation",
+    output_schema=JudgeEvaluation,
+)
+
+# --- Pipeline: root_agent for ADK discovery ---
+root_agent = SequentialAgent(
+    name="RecommendationPipeline",
+    sub_agents=[compass_agent, judge_agent],
+    description="Sequentielle Pipeline: Erst Framework-Empfehlung durch CompassAgent, dann Qualitätsbewertung durch JudgeAgent.",
 )
     
 

@@ -1,7 +1,21 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Bot, Users, Download, Copy, Check } from "lucide-react";
+import {
+  ExternalLink,
+  Bot,
+  Users,
+  Download,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  AlertTriangle,
+  Lightbulb,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
 import { useState } from "react";
 import { ContactDialog } from "@/components/contact-dialog";
 import type { HistoryEntry } from "@/hooks/use-recommendation-history";
@@ -76,6 +90,21 @@ export interface Recommendation {
   alternative_ohne_ki: string | null;
 }
 
+export interface JudgeEvaluation {
+  score: number;
+  strengths: string[];
+  weaknesses: string[];
+  improvement_suggestions: string[];
+  framework_fit: string;
+  ease_of_use_realistic: boolean;
+}
+
+function getScoreBadge(score: number) {
+  if (score >= 7) return "bg-green-100 text-green-800 border-green-200";
+  if (score >= 5) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  return "bg-red-100 text-red-800 border-red-200";
+}
+
 function getEaseOfUseBadge(level: string) {
   const colors: Record<string, string> = {
     High: "bg-green-100 text-green-800 border-green-200",
@@ -87,6 +116,7 @@ function getEaseOfUseBadge(level: string) {
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
+  judgeEvaluation?: JudgeEvaluation;
   entry?: HistoryEntry;
   onCopy?: () => Promise<boolean>;
   onExport?: () => void;
@@ -94,12 +124,14 @@ interface RecommendationCardProps {
 
 export function RecommendationCard({
   recommendation,
+  judgeEvaluation,
   entry,
   onCopy,
   onExport,
 }: RecommendationCardProps) {
   const [copied, setCopied] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [judgeOpen, setJudgeOpen] = useState(false);
 
   async function handleCopy() {
     if (!onCopy) return;
@@ -166,6 +198,123 @@ export function RecommendationCard({
                 </p>
               </div>
             )}
+
+          {/* Judge Evaluation Section */}
+          {judgeEvaluation && (
+            <div className="mb-5">
+              <button
+                onClick={() => setJudgeOpen(!judgeOpen)}
+                className="flex items-center gap-2 w-full text-left text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2 hover:text-gray-700 transition-colors"
+              >
+                {judgeOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+                Qualitätsbewertung (Judge)
+                <span
+                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${getScoreBadge(judgeEvaluation.score)}`}
+                >
+                  {judgeEvaluation.score}/10
+                </span>
+                {judgeEvaluation.ease_of_use_realistic ? (
+                  <ShieldCheck className="h-4 w-4 text-green-600" />
+                ) : (
+                  <ShieldX className="h-4 w-4 text-amber-600" />
+                )}
+              </button>
+
+              {judgeOpen && (
+                <div className="space-y-4 mt-3 rounded-lg border border-gray-200 bg-gray-50/50 p-5">
+                  {/* Framework Fit */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      Framework-Fit
+                    </h5>
+                    <p className="text-sm text-gray-700">
+                      {judgeEvaluation.framework_fit}
+                    </p>
+                  </div>
+
+                  {/* Ease of Use Realistic */}
+                  <div className="flex items-center gap-2">
+                    <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Ease-of-Use realistisch:
+                    </h5>
+                    {judgeEvaluation.ease_of_use_realistic ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Ja
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Nein
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Strengths */}
+                  {judgeEvaluation.strengths.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1.5">
+                        Stärken
+                      </h5>
+                      <ul className="space-y-1">
+                        {judgeEvaluation.strengths.map((s, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm text-gray-700"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Weaknesses */}
+                  {judgeEvaluation.weaknesses.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1.5">
+                        Schwächen
+                      </h5>
+                      <ul className="space-y-1">
+                        {judgeEvaluation.weaknesses.map((w, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm text-gray-700"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                            {w}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Improvement Suggestions */}
+                  {judgeEvaluation.improvement_suggestions.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1.5">
+                        Verbesserungsvorschläge
+                      </h5>
+                      <ul className="space-y-1">
+                        {judgeEvaluation.improvement_suggestions.map((s, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm text-gray-700"
+                          >
+                            <Lightbulb className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 pt-2">
