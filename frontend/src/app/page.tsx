@@ -418,12 +418,7 @@ export default function Agent4Agents() {
           {recommendation && (
             <RecommendationCard
               recommendation={recommendation}
-              onContactExperts={() => {
-                // TODO: Implement expert contact logic
-                alert(
-                  "Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktiere das AI-Team direkt.",
-                );
-              }}
+              entry={currentEntry ?? undefined}
               onCopy={
                 currentEntry ? () => copyToClipboard(currentEntry) : undefined
               }

@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Bot, Users, Download, Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { ContactDialog } from "@/components/contact-dialog";
+import type { HistoryEntry } from "@/hooks/use-recommendation-history";
 
 // --- Framework metadata: docs URLs and context7 agent URLs ---
 const FRAMEWORK_META: Record<
@@ -85,18 +87,19 @@ function getEaseOfUseBadge(level: string) {
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
-  onContactExperts: () => void;
+  entry?: HistoryEntry;
   onCopy?: () => Promise<boolean>;
   onExport?: () => void;
 }
 
 export function RecommendationCard({
   recommendation,
-  onContactExperts,
+  entry,
   onCopy,
   onExport,
 }: RecommendationCardProps) {
   const [copied, setCopied] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   async function handleCopy() {
     if (!onCopy) return;
@@ -192,10 +195,22 @@ export function RecommendationCard({
               </Button>
             )}
 
-            <Button variant="secondary" onClick={onContactExperts}>
+            <Button
+              variant="secondary"
+              onClick={() => setContactOpen(true)}
+              disabled={!entry}
+            >
               <Users className="mr-2 h-4 w-4" />
               Expertenteam kontaktieren
             </Button>
+
+            {entry && (
+              <ContactDialog
+                open={contactOpen}
+                onOpenChange={setContactOpen}
+                entry={entry}
+              />
+            )}
 
             {/* Export & Copy */}
             <div className="flex gap-2 ml-auto">

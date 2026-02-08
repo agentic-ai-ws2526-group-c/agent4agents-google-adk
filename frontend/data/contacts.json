@@ -1,0 +1,26 @@
+[
+  {
+    "id": "09d2de01-797f-4061-ada4-58aa006c842e",
+    "receivedAt": "2026-02-08T11:14:10.884Z",
+    "name": "Felix Schöck",
+    "email": "scf3st@bosch.com",
+    "message": "Hallo, wir brauchen in unserem Team dringend diesen Bot.",
+    "context": {
+      "recommendation": {
+        "framework": "Cognigy",
+        "ease_of_use": "High",
+        "summary": "Cognigy ist die ideale Wahl für einen interaktiven Onboarding-Chatbot, da es komplexe Konversationen ohne Programmierung ermöglicht.",
+        "reasoning": "Da die primäre Anforderung ein Chatbot für Mitarbeiter ist, bietet Cognigy durch seine spezialisierte grafische Oberfläche für Dialoge den schnellsten Weg zum Ziel. Die Integration von Wissensquellen wie SharePoint für RAG (Retrieval Augmented Generation) ist nativ unterstützt und erfordert keinen manuellen Code. Dies minimiert den Wartungsaufwand und erlaubt eine intuitive Gestaltung der Onboarding-Experience.",
+        "ki_notwendig": true,
+        "alternative_ohne_ki": ""
+      },
+      "formInput": {
+        "useCaseDescription": "Ich möchte einen Onboarding-Agenten für neue Mitarbeiter in meiner Abteilung entwickeln. Der Agent soll den Mitarbeitern die wichtigsten Tools erklären, Fragen zu internen Prozessen beantworten und Dokumente in SharePoint finden.",
+        "preferredModelEcosystem": "keine",
+        "interactionChannel": "chatbot",
+        "integrationTargets": "SharePoint"
+      },
+      "timestamp": "2026-02-08T10:59:30.242Z"
+    }
+  }
+]
