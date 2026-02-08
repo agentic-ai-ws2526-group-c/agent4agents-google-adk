@@ -22,5 +22,29 @@
       },
       "timestamp": "2026-02-08T10:59:30.242Z"
     }
+  },
+  {
+    "id": "8a9e1412-a151-4b51-8b37-88f3605b60f6",
+    "receivedAt": "2026-02-08T11:44:13.924Z",
+    "name": "Felix S",
+    "email": "sadasdasd@gmail.com",
+    "message": "Hello wir brauchen bitte diese Agent pls",
+    "context": {
+      "recommendation": {
+        "framework": "CrewAI",
+        "ease_of_use": "Medium",
+        "summary": "CrewAI ist das optimal spezialisierte Framework für rollenbasierte Multi-Agenten-Systeme mit integrierter Delegationslogik.",
+        "reasoning": "Der Anwendungsfall erfordert eine klare Hierarchie, in welcher ein Manager-Agent die Arbeit von Spezialisten steuert und iterativ verfeinert. CrewAI bietet hierfür ein intuitives Abstraktionslevel, das die Orchestrierung dieser Loops und die Delegation von Aufgaben deutlich einfacher handhabt als eine manuelle Implementierung in reinem Code. Da die Agenten proaktiv suchen und sich gegenseitig kontrollieren müssen, ist CrewAI der ideale Kompromiss zwischen technischer Mächtigkeit und schneller Umsetzbarkeit.",
+        "ki_notwendig": true,
+        "alternative_ohne_ki": "null"
+      },
+      "formInput": {
+        "useCaseDescription": "Ein kollaboratives Multi-Agenten-System zur Erstellung von Lieferanten-Dossiers. Ein Agent analysiert die finanzielle Bonität über Datenbanken. Ein zweiter Agent untersucht proaktiv Nachrichten und Berichte auf ESG-Risiken. Ein dritter Agent agiert als strategischer Kopf: Er bewertet die Ergebnisse beider Spezialisten, fordert bei Widersprüchen oder Lücken gezielte Nachbesserungen von ihnen ein und entwickelt daraus eine taktisch fundierte Verhandlungsempfehlung, die er iterativ verfeinert.",
+        "preferredModelEcosystem": "keine",
+        "interactionChannel": "dashboard",
+        "integrationTargets": "Internet Suche"
+      },
+      "timestamp": "2026-02-08T11:43:06.126Z"
+    }
   }
 ]
