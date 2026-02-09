@@ -1,0 +1,50 @@
+[
+  {
+    "id": "09d2de01-797f-4061-ada4-58aa006c842e",
+    "receivedAt": "2026-02-08T11:14:10.884Z",
+    "name": "Felix Schöck",
+    "email": "",
+    "message": "Hallo, wir brauchen in unserem Team dringend diesen Bot.",
+    "context": {
+      "recommendation": {
+        "framework": "Cognigy",
+        "ease_of_use": "High",
+        "summary": "Cognigy ist die ideale Wahl für einen interaktiven Onboarding-Chatbot, da es komplexe Konversationen ohne Programmierung ermöglicht.",
+        "reasoning": "Da die primäre Anforderung ein Chatbot für Mitarbeiter ist, bietet Cognigy durch seine spezialisierte grafische Oberfläche für Dialoge den schnellsten Weg zum Ziel. Die Integration von Wissensquellen wie SharePoint für RAG (Retrieval Augmented Generation) ist nativ unterstützt und erfordert keinen manuellen Code. Dies minimiert den Wartungsaufwand und erlaubt eine intuitive Gestaltung der Onboarding-Experience.",
+        "ki_notwendig": true,
+        "alternative_ohne_ki": ""
+      },
+      "formInput": {
+        "useCaseDescription": "Ich möchte einen Onboarding-Agenten für neue Mitarbeiter in meiner Abteilung entwickeln. Der Agent soll den Mitarbeitern die wichtigsten Tools erklären, Fragen zu internen Prozessen beantworten und Dokumente in SharePoint finden.",
+        "preferredModelEcosystem": "keine",
+        "interactionChannel": "chatbot",
+        "integrationTargets": "SharePoint"
+      },
+      "timestamp": "2026-02-08T10:59:30.242Z"
+    }
+  },
+  {
+    "id": "8a9e1412-a151-4b51-8b37-88f3605b60f6",
+    "receivedAt": "2026-02-08T11:44:13.924Z",
+    "name": "Felix S",
+    "email": "sadasdasd@gmail.com",
+    "message": "Hello wir brauchen bitte diese Agent pls",
+    "context": {
+      "recommendation": {
+        "framework": "CrewAI",
+        "ease_of_use": "Medium",
+        "summary": "CrewAI ist das optimal spezialisierte Framework für rollenbasierte Multi-Agenten-Systeme mit integrierter Delegationslogik.",
+        "reasoning": "Der Anwendungsfall erfordert eine klare Hierarchie, in welcher ein Manager-Agent die Arbeit von Spezialisten steuert und iterativ verfeinert. CrewAI bietet hierfür ein intuitives Abstraktionslevel, das die Orchestrierung dieser Loops und die Delegation von Aufgaben deutlich einfacher handhabt als eine manuelle Implementierung in reinem Code. Da die Agenten proaktiv suchen und sich gegenseitig kontrollieren müssen, ist CrewAI der ideale Kompromiss zwischen technischer Mächtigkeit und schneller Umsetzbarkeit.",
+        "ki_notwendig": true,
+        "alternative_ohne_ki": "null"
+      },
+      "formInput": {
+        "useCaseDescription": "Ein kollaboratives Multi-Agenten-System zur Erstellung von Lieferanten-Dossiers. Ein Agent analysiert die finanzielle Bonität über Datenbanken. Ein zweiter Agent untersucht proaktiv Nachrichten und Berichte auf ESG-Risiken. Ein dritter Agent agiert als strategischer Kopf: Er bewertet die Ergebnisse beider Spezialisten, fordert bei Widersprüchen oder Lücken gezielte Nachbesserungen von ihnen ein und entwickelt daraus eine taktisch fundierte Verhandlungsempfehlung, die er iterativ verfeinert.",
+        "preferredModelEcosystem": "keine",
+        "interactionChannel": "dashboard",
+        "integrationTargets": "Internet Suche"
+      },
+      "timestamp": "2026-02-08T11:43:06.126Z"
+    }
+  }
+]

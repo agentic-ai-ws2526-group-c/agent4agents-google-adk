@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+.agent
+.agents
+.gemini
+
 # Distribution / packaging
 .Python
 build/

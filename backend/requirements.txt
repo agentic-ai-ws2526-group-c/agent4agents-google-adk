@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic
+google-adk>=1.17.0
+python-dotenv>=1.2.1
