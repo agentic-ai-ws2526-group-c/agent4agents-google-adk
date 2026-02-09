@@ -1,5 +1,5 @@
 """
-Two-agent pipeline: CompassAgent recommends → JudgeAgent evaluates.
+Two-agent pipeline: RecommenderAgent recommends → JudgeAgent evaluates.
 Uses Google ADK SequentialAgent for orchestration (LLM-as-a-Judge pattern).
 """
 from pathlib import Path
@@ -56,18 +56,18 @@ BASE_DIR = Path(__file__).parent
 PROMPTS_DIR = BASE_DIR / "prompts"
 
 try:
-    compass_instruction = (PROMPTS_DIR / "compass.txt").read_text(encoding="utf-8")
+    recommender_instruction = (PROMPTS_DIR / "recommender.txt").read_text(encoding="utf-8")
     judge_instruction = (PROMPTS_DIR / "judge.txt").read_text(encoding="utf-8")
-    logger.info("Prompts loaded successfully (COMPASS + Judge).")
+    logger.info("Prompts loaded successfully (Recommender + Judge).")
 except Exception as e:
     logger.error(f"Failed to load prompts: {e}")
     raise e
 
-# --- Stage 1: CompassAgent (Framework-Empfehlung) ---
-compass_agent = LlmAgent(
-    name="CompassAgent",
+# --- Stage 1: RecommenderAgent (Framework-Empfehlung) ---
+recommender_agent = LlmAgent(
+    name="RecommenderAgent",
     model="gemini-3-flash-preview",
-    instruction=compass_instruction,
+    instruction=recommender_instruction,
     description="Empfiehlt exakt ein KI-Framework basierend auf strukturiertem Formular-Input. Keine Rückfragen.",
     output_key="recommendation",
     output_schema=FrameworkRecommendation,
@@ -78,7 +78,7 @@ judge_agent = LlmAgent(
     name="JudgeAgent",
     model="gemini-3-flash-preview",
     instruction=judge_instruction,
-    description="Bewertet die Qualität der Framework-Empfehlung des CompassAgent anhand von Framework-Fit, Ease-of-Use-Realismus, Begründungsqualität und Alternativen-Check.",
+    description="Bewertet die Qualität der Framework-Empfehlung des RecommenderAgent anhand von Framework-Fit, Ease-of-Use-Realismus, Begründungsqualität und Alternativen-Check.",
     output_key="judge_evaluation",
     output_schema=JudgeEvaluation,
 )
@@ -86,8 +86,8 @@ judge_agent = LlmAgent(
 # --- Pipeline: root_agent for ADK discovery ---
 root_agent = SequentialAgent(
     name="RecommendationPipeline",
-    sub_agents=[compass_agent, judge_agent],
-    description="Sequentielle Pipeline: Erst Framework-Empfehlung durch CompassAgent, dann Qualitätsbewertung durch JudgeAgent.",
+    sub_agents=[recommender_agent, judge_agent],
+    description="Sequentielle Pipeline: Erst Framework-Empfehlung durch RecommenderAgent, dann Qualitätsbewertung durch JudgeAgent.",
 )
     
 

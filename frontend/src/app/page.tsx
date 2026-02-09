@@ -72,7 +72,7 @@ const STEPS: { key: Step; label: string }[] = [
 const LOADING_STAGES = [
   { label: "Sitzung wird erstellt", icon: "🔗", delay: 0 },
   {
-    label: "CompassAgent analysiert deinen Use Case",
+    label: "RecommenderAgent analysiert deinen Use Case",
     icon: "🧭",
     delay: 2000,
   },
@@ -368,7 +368,7 @@ export default function Agent4Agents() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const textPart = event.content.parts?.find((p: any) => p.text);
           if (textPart) {
-            if (event.author === "CompassAgent") {
+            if (event.author === "RecommenderAgent") {
               recommendationText = textPart.text;
             } else if (event.author === "JudgeAgent") {
               judgeText = textPart.text;
@@ -378,7 +378,7 @@ export default function Agent4Agents() {
       }
 
       if (!recommendationText) {
-        throw new Error("Keine Antwort vom CompassAgent erhalten.");
+        throw new Error("Keine Antwort vom RecommenderAgent erhalten.");
       }
 
       // Parse recommendation JSON
