@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Recommendation } from "@/components/recommendation-card";
 import type { HistoryEntry } from "@/hooks/use-recommendation-history";
 
 const contactSchema = z.object({

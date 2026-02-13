@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import type { Recommendation, JudgeEvaluation } from "@/components/recommendation-card";
 
 const STORAGE_KEY = "agent4agents_history";
@@ -38,12 +38,7 @@ function saveHistory(entries: HistoryEntry[]) {
 }
 
 export function useRecommendationHistory() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
+  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
 
   const addEntry = useCallback(
     (

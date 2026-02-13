@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { History, Trash2, X, Clock } from "lucide-react";
 import type { HistoryEntry } from "@/hooks/use-recommendation-history";
@@ -23,21 +23,24 @@ export function HistoryPanel({
   onRemove,
   onClear,
 }: HistoryPanelProps) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const overlay =
-    isOpen && mounted
+    isOpen && isClient
       ? createPortal(
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-[100] bg-black/20"
+              className="fixed inset-0 z-100 bg-black/20"
               onClick={onToggle}
             />
 
             {/* Panel */}
-            <div className="fixed right-0 top-0 z-[110] flex h-full w-full max-w-md flex-col border-l border-gray-200 bg-white shadow-xl">
+            <div className="fixed right-0 top-0 z-110 flex h-full w-full max-w-md flex-col border-l border-gray-200 bg-white shadow-xl">
               {/* Panel header */}
               <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -140,7 +143,7 @@ export function HistoryPanel({
         title="Empfehlungs-Historie"
       >
         <History className="h-5 w-5" />
-        {history.length > 0 && (
+        {isClient && history.length > 0 && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#005691] text-[10px] font-bold text-white">
             {history.length}
           </span>
